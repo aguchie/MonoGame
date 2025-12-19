@@ -143,9 +143,33 @@ namespace Microsoft.Xna.Framework.Audio
                 _deviceChangeRequested = false;
             }
 
-            if (changeRequested)
+            // Check if the current device has been disconnected (unplugged)
+            bool isDisconnected = CheckDeviceDisconnected();
+
+            if (changeRequested || isDisconnected)
             {
                 ReopenDefaultDevice();
+            }
+        }
+
+        /// <summary>
+        /// Checks if the current audio device has been disconnected.
+        /// Uses ALC_EXT_disconnect extension to poll device connection status.
+        /// </summary>
+        private bool CheckDeviceDisconnected()
+        {
+            try
+            {
+                int[] connected = new int[1];
+                Alc.GetInteger(_device, AlcGetInteger.Connected, 1, connected);
+
+                // If connected is 0 (ALC_FALSE), the device is disconnected
+                return connected[0] == 0;
+            }
+            catch
+            {
+                // If the extension isn't available or query fails, assume connected
+                return false;
             }
         }
 
