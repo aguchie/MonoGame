@@ -121,6 +121,26 @@ namespace MonoGame.OpenAL
     internal enum AlcGetInteger
     {
         CaptureSamples = 0x0312,
+        Connected = 0x0313,
+    }
+
+    internal enum AlcDeviceType
+    {
+        PlaybackDevice = 0x19D4,
+        CaptureDevice = 0x19D5,
+    }
+
+    internal enum AlcEventType
+    {
+        DefaultDeviceChanged = 0x19D6,
+        DeviceAdded = 0x19D7,
+        DeviceRemoved = 0x19D8,
+    }
+
+    internal enum AlcEventSupport
+    {
+        Supported = 0x19D9,
+        NotSupported = 0x19DA,
     }
 
     internal enum EfxFilteri
@@ -579,6 +599,33 @@ namespace MonoGame.OpenAL
         [DllImport(AL.LibraryName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void alcDeviceResumeSOFT(IntPtr device);
         internal static void DeviceResume(IntPtr device) => alcDeviceResumeSOFT(device);
+#endif
+
+#if DESKTOPGL || ANGLE
+        // ALC_SOFT_system_events extension - for device change detection
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        internal delegate void AlcEventCallback(int eventType, int deviceType, IntPtr device, int messageLength, string message, IntPtr userParam);
+
+        [DllImport(AL.LibraryName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern int alcEventIsSupportedSOFT(int eventType, int deviceType);
+        internal static AlcEventSupport EventIsSupported(AlcEventType eventType, AlcDeviceType deviceType) =>
+            (AlcEventSupport)alcEventIsSupportedSOFT((int)eventType, (int)deviceType);
+
+        [DllImport(AL.LibraryName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern bool alcEventControlSOFT(int count, int[] events, bool enable);
+        internal static bool EventControl(int count, int[] events, bool enable) =>
+            alcEventControlSOFT(count, events, enable);
+
+        [DllImport(AL.LibraryName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void alcEventCallbackSOFT(AlcEventCallback callback, IntPtr userParam);
+        internal static void EventCallback(AlcEventCallback callback, IntPtr userParam) =>
+            alcEventCallbackSOFT(callback, userParam);
+
+        // ALC_SOFT_reopen_device extension - for reopening device with new parameters
+        [DllImport(AL.LibraryName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern bool alcReopenDeviceSOFT(IntPtr device, string deviceName, int[] attribs);
+        internal static bool ReopenDevice(IntPtr device, string deviceName, int[] attribs) =>
+            alcReopenDeviceSOFT(device, deviceName, attribs);
 #endif
     }
 
